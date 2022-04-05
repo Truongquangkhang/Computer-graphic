@@ -1,1187 +1,352 @@
-#include <GL/glut.h>
-
 #include <iostream>
-
-#include <stdlib.h>
-
 #include <math.h>
-
-#include <string>
-
-#include <fstream>
-
- 
-
-#define PI 3.14159265
-
-#define LEFT 1
-
-#define RIGHT 2
-
-#define BELOW 4
-
-#define ABOVE 8
-
+#include <GL/glut.h>
 using namespace std;
 
- 
-
-char inputName[] = "input.txt";  // define the datalines input file name
-
-int lineNum;                // define the number of lines to be read from input.txt
-
-double vx, vy, vz;          // define the viewpoint coordinate
-
-double s;                   // define the screen size
-
-double d;                   // define the distance of the screen
-
-double screenPixel;         // define the coordinate system of the screen runs from 0 to the number of screenPixel
-
-double angleRotate;         // define the angle of rotation
-
-bool orginalLines;          // define a flag to determine if the line is drawing before or after transformation
-
-double rx1, rx2, ry1, ry2, rz1, rz2;
-
-// define and initial the translate matrix
-
-double    matrixTranslate [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// define the initial scale matrix
-
-double    matrixScale [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// define the initial rotate matrix
-
-double matrixRotate [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// define the initial concatenate matrix
-
-double matrixConcatenate [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double arbitraryRotation [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double V [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double N [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double T2 [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 0, -1, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double T3 [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-// initial the matrix
-
-double T4 [4][4] = {
-
-    {1, 0, 0, 0},
-
-    {0, 1, 0, 0},
-
-    {0, 0, 1, 0},
-
-    {0, 0, 0, 1}
-
-};
-
- 
-
-double dataW [100][6];                        // define a dataline array to store the line points at the WCS
-
-double dataC [100][6];                        // define a dataline array to store the line points at the CCS
-
-int dataS [100][4];                           // define a dataline array to stroe the line points in the screen
-
- 
-
-void init (double x, double y)
-
+typedef float Matrix4[4][4];
+
+Matrix4 theMatrix;
+// static GLfloat input[8][3]=
+//{
+//     {40,40,-50},{90,40,-50},{90,90,-50},{40,90,-50},
+//     {30,30,0},{80,30,0},{80,80,0},{30,80,0}
+//
+// };
+
+static GLfloat input[8][3];
+float output[8][3];
+float tx, ty, tz;
+float sx, sy, sz;
+float angle;
+float Iz; // toa do cua tam chieu nam tren truc OZ
+int choice, choiceRot;
+
+void inputSquare()
 {
-
-    glClearColor (0.0, 0.0, 0.0, 0.0); // set display-window color to black
-
-    glMatrixMode (GL_PROJECTION); // set projection parameters
-
-    gluOrtho2D (0.0, x, 0.0, y); // set the x-coordinate from 0 to 399 and y-coordinate from 0 to 399
-
-}
-
- 
-
- 
-
-int myround (double r)
-
-{
-
-    return int (r + 0.5); // round the value to the nearest integer
-
-}
-
- 
-
-// basic translate function to move from one location to another
-
-void basicTranslate (double Tx, double Ty, double Tz)
-
-{
-
-    matrixTranslate [3][0] = -Tx; // assign the x axis translate displacement
-
-    matrixTranslate [3][1] = -Ty; // assign the y axis translate displacement
-
-    matrixTranslate [3][2] = -Tz; // assign the z axis translate displacement
-
- 
-
-    // print out the whole translate matrix
-
-    cout << "Translation Matrix" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << matrixTranslate [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
-// basic scale function to enlarger or  shrinker an object
-
-void basicScale (double Sx, double Sy, double Sz)
-
-{
-
-    matrixScale [0][0] = Sx;      // assign the x scaling factor
-
-    matrixScale [1][1] = Sy;      // assign the y scaling factor
-
-    matrixScale [2][2] = Sz;      // assign the z scaling factor
-
- 
-
-    // print out the whole scaling matrix
-
-    cout << "Scaling Matrix" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << matrixScale [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
-// basic rotation function about x axis
-
-void basicRotateX (double angle)
-
-{
-
-    // assign the angle of rotation to the matrix
-
-    matrixRotate [1][1] = cos (angle*PI/180);
-
-    matrixRotate [2][1] = -sin (angle*PI/180);
-
-    matrixRotate [1][2] = sin (angle*PI/180);
-
-    matrixRotate [2][2] = cos (angle*PI/180);
-
-   
-
-    // print out the whole rotation matrix
-
-    cout << "Rotation Matrix by X axis" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << matrixRotate [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
- 
-
-// basic rotation function about y axis
-
-void basicRotateY (double angle)
-
-{
-
-    // assign the angle of rotation to the matrix
-
-    matrixRotate [0][0] = cos (angle*PI/180);
-
-    matrixRotate [0][2] = -sin (angle*PI/180);
-
-    matrixRotate [2][0] = sin (angle*PI/180);
-
-    matrixRotate [2][2] = cos (angle*PI/180);
-
-   
-
-    // print out the whole rotation matrix
-
-    cout << "Rotation Matrix by Y axis" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << matrixRotate [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
-// basic rotation function about z axis
-
-void basicRotateZ (double angle)
-
-{
-
-    // assign the angle of rotation to the matrix
-
-    matrixRotate [0][0] = cos (angle*PI/180);
-
-    matrixRotate [1][0] = -sin (angle*PI/180);
-
-    matrixRotate [0][1] = sin (angle*PI/180);
-
-    matrixRotate [1][1] = cos (angle*PI/180);
-
-   
-
-    // print out the whole rotation matrix
-
-    cout << "Rotation Matrix by Z axis" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << matrixRotate [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
-// combine two int transformation matrix into one, the result will be stored in matrix1
-
-void concatenate (double matrix1 [4][4], double matrix2 [4][4])
-
-{
-
-    double matrix [4][4];
-
- 
-
-    // perform the calculation of matrix1 * matrix2
-
-    for (int row = 0; row < 4; row++)
-
+    float size;
+    cout << "Enter the length of the cube:";
+    cin >> size;
+    float insertArr[8][3] =
+        {
+            {0, 0, size}, {size, 0, size}, {size, size, size}, {0, size, size}, {0, 0, 0}, {size, 0, 0}, {size, size, 0}, {0, size, 0}
+
+        };
+
+    for (int i = 0; i < 8; i++)
     {
-
-          for (int column = 0; column < 4; column++)
-
-          {
-
-                matrix [row][column] = 0;
-
-                for (int i = 0; i < 4; i++)
-
-                {
-
-                      matrix [row][column] = matrix [row][column] + matrix1 [row][i] * matrix2 [i][column];                    
-
-                }                
-
-          }
-
+        for (int j = 0; j < 3; j++)
+        {
+            if (j == 2)
+                input[i][j] = insertArr[i][j] + 60;
+            else
+                input[i][j] = insertArr[i][j];
+        }
     }
+}
 
- 
-
-    // print out the cancontenate matrix and assign to the matrixConcatenate applied by later transformation
-
-    cout << "Concatenate Matrix for this step: " << endl;
-
-    for (int row = 0; row < 4; row++)
-
+void printSquare(float a[8][3])
+{
+    cout << "==========================\n";
+    for (int i = 0; i < 8; i++)
     {
-
-          for (int column = 0; column < 4; column++)
-
-          {
-
-                matrixConcatenate [row][column] = matrix [row][column];
-
-                cout << matrixConcatenate [row][column] << ", ";
-
-          }
-
-          cout << endl;
-
+        for (int j = 0; j < 3; j++)
+        {
+            cout << a[i][j] << "\t";
+        }
+        cout << "\n";
     }
-
-    cout << endl;
-
+    cout << "==========================\n";
 }
 
- 
-
-void matrixT3 (double x, double y)
-
+void setIdentityM(Matrix4 m)
 {
-
-    double cosC = y / sqrt((pow(x, 2) + pow(y, 2)));
-
-    double sinS = x / sqrt((pow(x, 2) + pow(y, 2)));
-
-    // assign the angle of rotation to the matrix
-
-    T3 [0][0] = -cosC;
-
-    T3 [0][2] = sinS;
-
-    T3 [2][0] = -sinS;
-
-    T3 [2][2] = -cosC;
-
-   
-
-    // print out the whole rotation matrix
-
-    cout << "Matrix T3" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << T3 [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            m[i][j] = (i == j);
 }
 
- 
-
-void matrixT4 (double x, double y)
-
+void perspective(float Iz)
 {
+    //  float perArr [8][3] =
+    //  {
+    //        {0,0,size},{size,0,size},{size,size,size},{0,size,size},
+    //        {0,0,0},{size,0,0},{size,size,0},{0,size,0}
+    //
+    //  };
 
-    double cosC = y / sqrt((pow(x, 2) + pow(y, 2)));
-
-    double sinS = x / sqrt((pow(x, 2) + pow(y, 2)));
-
-    // assign the angle of rotation to the matrix
-
-    T4 [1][1] = cosC;
-
-    T4 [2][1] = -sinS;
-
-    T4 [1][2] = sinS ;
-
-    T4 [2][2] = cosC;
-
-   
-
-    // print out the whole rotation matrix
-
-    cout << "Matrix T4" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << T4 [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
-}
-
- 
-
-void matrixV (double m[4][4])
-
-{
-
-    // print out the cancontenate matrix and assign to the matrixConcatenate applied by later transformation
-
-    cout << "Matrix V: " << endl;
-
-    for (int row = 0; row < 4; row++)
-
+    float r = -1 / Iz;
+    for (int i = 0; i < 8; i++)
     {
-
-          for (int column = 0; column < 4; column++)
-
-          {
-
-                V [row][column] = m [row][column];
-
-                cout << V [row][column] << ", ";
-
-          }
-
-          cout << endl;
-
+        for (int j = 0; j < 3; j++)
+        {
+            if (j == 2)
+                output[i][j] = 0;
+            else
+                output[i][j] = input[i][j] / (r + 1);
+        }
     }
-
-    cout << endl;
-
 }
 
- 
-
-void matrixN ()
-
+void scale(int sx, int sy, int sz)
 {
-
-    N [0][0] = 2*d / s;
-
-    N [1][1] = 2*d / s;
-
-    // print out the whole rotation matrix
-
-    cout << "Matrix N" << endl;
-
-    for (int i = 0; i < 4; i++) {
-
-          for (int j = 0; j < 4; j++)
-
-                cout << N [i][j] << ", ";
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
+    theMatrix[0][0] = sx;
+    theMatrix[1][1] = sy;
+    theMatrix[2][2] = sz;
 }
 
- 
-
-// apply the int transformation matrix to the lines
-
-void applyTransformation (double matrix [4][4], double datalines [100][6])
-
+void RotateX(float angle) // Parallel to x
 {
-
-    double pointData [6];
-
-    cout << "Transformation dataline result: " << endl;
-
- 
-
-    // perform the calculation of line point * matrix
-
-    for (int i = 0; i < lineNum; i++) {
-
-          pointData [0] = datalines [i][0] * matrix[0][0] + datalines[i][1] * matrix [1][0] + datalines [i][2] * matrix [2][0] + matrix [3][0] ;
-
-          pointData [1] = datalines [i][0] * matrix[0][1] + datalines[i][1] * matrix [1][1] + datalines [i][2] * matrix [2][1] + matrix [3][1] ;
-
-          pointData [2] = datalines [i][0] * matrix[0][2] + datalines[i][1] * matrix [1][2] + datalines [i][2] * matrix [2][2] + matrix [3][2] ;
-
-         
-
-          pointData [3] = datalines [i][3] * matrix[0][0] + datalines[i][4] * matrix [1][0] + datalines [i][5] * matrix [2][0] + matrix [3][0] ;
-
-          pointData [4] = datalines [i][3] * matrix[0][1] + datalines[i][4] * matrix [1][1] + datalines [i][5] * matrix [2][1] + matrix [3][1] ;
-
-          pointData [5] = datalines [i][3] * matrix[0][2] + datalines[i][4] * matrix [1][2] + datalines [i][5] * matrix [2][2] + matrix [3][2] ;
-
-                     
-
-          // print out the result after transformation and store them in a new datalines array
-
-          for (int j = 0; j < 6; j++) {
-
-                dataC [i][j] = pointData [j];
-
-                cout << dataC [i][j] << ", ";
-
-          }
-
-          cout << endl;
-
-    }
-
+    angle = angle * 3.142 / 180;
+    theMatrix[1][1] = cos(angle);
+    theMatrix[1][2] = -sin(angle);
+    theMatrix[2][1] = sin(angle);
+    theMatrix[2][2] = cos(angle);
 }
 
- 
-
- 
-
-// read datalines from an external file
-
-void inputLines (char strlines[])
-
+void RotateY(float angle) // parallel to y
 {
+    angle = angle * 3.14 / 180;
+    theMatrix[0][0] = cos(angle);
+    theMatrix[0][2] = -sin(angle);
+    theMatrix[2][0] = sin(angle);
+    theMatrix[2][2] = cos(angle);
+}
 
-    ifstream inFile;
+void RotateZ(float angle) // parallel to z
+{
+    angle = angle * 3.14 / 180;
+    theMatrix[0][0] = cos(angle);
+    theMatrix[0][1] = sin(angle);
+    theMatrix[1][0] = -sin(angle);
+    theMatrix[1][1] = cos(angle);
+}
 
-    inFile.open (strlines); // open the input file
-
-   
-
-    cout << endl;
-
-    cout << "Original datalines: " << endl;
-
-    for (int i = 0; i < lineNum; i++)
-
+void multiplyM()
+{
+    // We Don't require 4th row and column in scaling and rotation
+    //[8][3]=[8][3]*[3][3] //4th not used
+    for (int i = 0; i < 8; i++)
     {
-
-          for (int j = 0; j < 6; j++)
-
-          {
-
-                inFile >> dataW [i][j]; // read the points in the file, and store them in a data array
-
-                cout << dataW [i][j] << ", "; // print out the data
-
-          }
-
-          cout << endl;
-
+        for (int j = 0; j < 3; j++)
+        {
+            output[i][j] = 0;
+            for (int k = 0; k < 3; k++)
+                output[i][j] = output[i][j] + input[i][k] * theMatrix[k][j];
+        }
     }
+}
+void Axes(void)
+{
+    glBegin(GL_LINES);
+    glColor3f(1.0, 0.0, 0.0);
+    glVertex3f(-1000.0, 0.0, 0.0);
+    glVertex3f(1000.0, 0.0, 0.0);
+    glEnd();
 
-    cout << endl;
+    glBegin(GL_LINES);
+    glColor3f(0.0, 1.0, 0.0);
+    glVertex3f(0.0, -1000.0, 0.0);
+    glVertex3f(0.0, 1000.0, 0.0);
+    glEnd();
 
-    inFile.close ();
-
+    glBegin(GL_LINES);
+    glColor3f(0.0, 0.0, 1.0);
+    glVertex3f(0.0, 0.0, -5000.0);
+    glVertex3f(0.0, 0.0, 5000.0);
+    glEnd();
 }
 
- 
-
-void output ()
-
+void drawInput(float a[8][3])
 {
+    glBegin(GL_QUADS);
+    glColor3f(0.7, 0.4, 0.5); // behind
+    glVertex3fv(a[0]);
+    glVertex3fv(a[1]);
+    glVertex3fv(a[2]);
+    glVertex3fv(a[3]);
 
-    double vcx, vcy, vsx, vsy;
+    glColor3f(0.8, 0.2, 0.4); // bottom
+    glVertex3fv(a[0]);
+    glVertex3fv(a[1]);
+    glVertex3fv(a[5]);
+    glVertex3fv(a[4]);
 
-    vcx = vcy = vsx = vsy = screenPixel / 2;
+    glColor3f(0.3, 0.6, 0.7); // left
+    glVertex3fv(a[0]);
+    glVertex3fv(a[4]);
+    glVertex3fv(a[7]);
+    glVertex3fv(a[3]);
 
-    cout << "Output: " << endl;
+    glColor3f(0.2, 0.8, 0.2); // right
+    glVertex3fv(a[1]);
+    glVertex3fv(a[2]);
+    glVertex3fv(a[6]);
+    glVertex3fv(a[5]);
 
-    for (int i = 0; i < lineNum; i++)
+    glColor3f(0.7, 0.7, 0.2); // up
+    glVertex3fv(a[2]);
+    glVertex3fv(a[3]);
+    glVertex3fv(a[7]);
+    glVertex3fv(a[6]);
 
-    {
+    glColor3f(1.0, 0.1, 0.1);
+    glVertex3fv(a[4]);
+    glVertex3fv(a[5]);
+    glVertex3fv(a[6]);
+    glVertex3fv(a[7]);
 
-          dataS [i][0] = myround((dataC [i][0] / dataC [i][2]) * vsx + vcx);
-
-          dataS [i][1] = myround((dataC [i][1] / dataC [i][2]) * vsy + vcy);
-
-          dataS [i][2] = myround((dataC [i][3] / dataC [i][5]) * vsx + vcx);
-
-          dataS [i][3] = myround((dataC [i][4] / dataC [i][5]) * vsy + vcy);
-
-    }
-
-    for (int i = 0; i < lineNum; i++)
-
-    {
-
-          for (int j = 0; j < 4; j++)
-
-          {
-
-                cout << dataS [i][j] << ", "; // print out the data
-
-          }
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
+    glEnd();
 }
 
- 
-
-// rotating a object about an arbitrary axis by theta degree
-
-void Rotation (double angle, double x1, double y1, double z1, double x2, double y2, double z2)
-
+void drawOutput(float a[8][3])
 {
-
-    double x, y, z;
-
-    x = x2 - x1;
-
-    y = y2 - y1;
-
-    z = z2 - z1;
-
- 
-
-    double D = sqrt(pow (x, 2) + pow (y, 2) + pow (z, 2));
-
-    double a = x / D;
-
-    double b = y / D;
-
-    double c = z / D;
-
- 
-
-    double ad = sqrt(pow (b, 2) + pow (c, 2));
-
-    double cosa = c / ad;
-
-    double sina = b / ad;
-
-    double cosb = ad;
-
-    double sinb = a;
-
-    double costheta = cos (angle*PI/180);
-
-    double sintheta = sin (angle*PI/180);
-
-   
-
-    // initial the matrix
-
-    double T [4][4] = {
-
-          {1, 0, 0, 0},
-
-          {0, 1, 0, 0},
-
-          {0, 0, 1, 0},
-
-          {-x1, -y1, -z1, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double NT [4][4] = {
-
-          {1, 0, 0, 0},
-
-          {0, 1, 0, 0},
-
-          {0, 0, 1, 0},
-
-          {x1, y1, z1, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double RA [4][4] = {
-
-          {1, 0, 0, 0},
-
-          {0, cosa, sina, 0},
-
-          {0, -sina, cosa, 0},
-
-          {0, 0, 0, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double NRA [4][4] = {
-
-          {1, 0, 0, 0},
-
-          {0, cosa, -sina, 0},
-
-          {0, sina, cosa, 0},
-
-          {0, 0, 0, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double RB [4][4] = {
-
-          {cosb, 0, sinb, 0},
-
-          {0, 1, 0, 0},
-
-          {-sinb, 0, cosb, 0},
-
-          {0, 0, 0, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double NRB [4][4] = {
-
-          {cosb, 0, -sinb, 0},
-
-          {0, 1, 0, 0},
-
-          {sinb, 0, cosb, 0},
-
-          {0, 0, 0, 1}
-
-    };
-
- 
-
-    // initial the matrix
-
-    double Rtheta [4][4] = {
-
-          {costheta, sintheta, 0, 0},
-
-          {-sintheta, costheta, 0, 0},
-
-          {0, 0, 1, 0},
-
-          {0, 0, 0, 1}
-
-    };
-
- 
-
-    concatenate (T, RA);
-
-    concatenate (matrixConcatenate, RB);
-
-    concatenate (matrixConcatenate, Rtheta);
-
-    concatenate (matrixConcatenate, NRB);
-
-    concatenate (matrixConcatenate, NRA);
-
-    concatenate (matrixConcatenate, NT);
-
- 
-
-    // print out the matrix
-
-    cout << "Arbitrary Rotation Matrix: " << endl;
-
-    for (int row = 0; row < 4; row++)
-
-    {
-
-          for (int column = 0; column < 4; column++)
-
-          {
-
-                arbitraryRotation [row][column] = matrixConcatenate [row][column];
-
-                cout << arbitraryRotation [row][column] << ", ";
-
-          }
-
-          cout << endl;
-
-    }
-
-    cout << endl;
-
+    glBegin(GL_QUADS);
+    glColor3f(0.0, 0.0, 1.0); // behind
+    glVertex3fv(a[0]);
+    glVertex3fv(a[1]);
+    glVertex3fv(a[2]);
+    glVertex3fv(a[3]);
+
+    glColor3f(0.0, 0.0, -1.0); // bottom
+    glVertex3fv(a[0]);
+    glVertex3fv(a[1]);
+    glVertex3fv(a[5]);
+    glVertex3fv(a[4]);
+
+    glColor3f(0.0, 1.0, 0.0); // left
+    glVertex3fv(a[0]);
+    glVertex3fv(a[4]);
+    glVertex3fv(a[7]);
+    glVertex3fv(a[3]);
+
+    glColor3f(0.0, -1.0, 0.0); // right
+    glVertex3fv(a[1]);
+    glVertex3fv(a[2]);
+    glVertex3fv(a[6]);
+    glVertex3fv(a[5]);
+
+    glColor3f(1.0, 0.0, 0.0); // up
+    glVertex3fv(a[2]);
+    glVertex3fv(a[3]);
+    glVertex3fv(a[7]);
+    glVertex3fv(a[6]);
+
+    glColor3f(-1.0, 0.0, 0.0);
+    glVertex3fv(a[4]);
+    glVertex3fv(a[5]);
+    glVertex3fv(a[6]);
+    glVertex3fv(a[7]);
+
+    glEnd();
 }
 
- 
-
-void myDisplay (void)
-
+void init()
 {
-
-    glColor3f (1.0, 1.0, 1.0); // activate the pixel by setting the point color to white, draw orginal lines     
-
-    for (int i = 0; i < lineNum; i++)
-
-    {
-
-        glBegin(GL_LINES);  
-
-    glVertex2i(dataS[i][0], dataS[i][1]);
-
-    glVertex2i(dataS[i][2], dataS[i][3]);
-
-          glEnd();
-
-    }
-
-    glFlush ();
-
+    glClearColor(1.0, 1.0, 1.0, 1.0); // set backgrond color to white
+    glOrtho(-454.0, 454.0, -250.0, 250.0, -250.0, 250.0);
+    // Set the no. of Co-ordinates along X & Y axes and their gappings
+    glEnable(GL_DEPTH_TEST);
+    // To Render the surfaces Properly according to their depths
 }
 
-   
-
-// display the function implementation in the screen
-
-void displayCube (void)
-
+void display()
 {
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    gluLookAt(3.0, 2.0, 25.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    Axes();
 
-   
+    drawInput(input);
+    setIdentityM(theMatrix);
+    switch (choice)
+    {
+    case 1:
+        perspective(Iz);
+        break;
+    case 2:
+        scale(sx, sy, sz);
+        multiplyM();
 
-    int turn;  
+        break;
+    case 3:
+        switch (choiceRot)
+        {
+        case 1:
+            RotateX(angle);
+            break;
+        case 2:
+            RotateY(angle);
+            break;
+        case 3:
+            RotateZ(angle);
+            break;
+        default:
+            break;
+        }
+        multiplyM();
+        break;
+    }
+    cout << "================\n";
+    cout << "matrix later\n";
+    printSquare(output);
+    drawOutput(output);
 
-    inputLines (inputName); // read datalines from an external file  
-
-    orginalLines = true;
-
-    basicTranslate (vx, vy, vz);
-
-    matrixT3 (vx, vy);
-
-    matrixT4 (vx, vy);
-
-    basicScale (1, 1, -1);
-
-    concatenate (matrixTranslate, T2);
-
-    concatenate (matrixConcatenate, T3);
-
-    concatenate (matrixConcatenate, T4);
-
-    concatenate (matrixConcatenate, matrixScale);
-
-    matrixV (matrixConcatenate);
-
-    matrixN ();
-
-    concatenate (V, N);
-
-    applyTransformation (matrixConcatenate, dataW);
-
-    output (); 
-
-    myDisplay();
-
+    glFlush();
 }
 
- 
-
-// display the function implementation in the screen
-
-void displayRotation ()
-
+int main(int argc, char **argv)
 {
-
-    //glClearColor(1.0,1.0,1.0,0.0);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-   
-
-    //glFlush();
-
- 
-
-    int turn;  
-
-    Rotation (angleRotate, rx1, ry1, rz1, rx2, ry2, rz2);
-
-    inputLines (inputName); // read datalines from an external file  
-
-    orginalLines = true;
-
-    basicTranslate (vx, vy, vz);
-
-    matrixT3 (vx, vy);
-
-    matrixT4 (vx, vy);
-
-    basicScale (1, 1, -1);
-
-    concatenate (matrixTranslate, T2);
-
-    concatenate (matrixConcatenate, T3);
-
-    concatenate (matrixConcatenate, T4);
-
-    concatenate (matrixConcatenate, matrixScale);
-
-    matrixV (matrixConcatenate);
-
-    matrixN ();
-
-    concatenate (V, N);
-
-    applyTransformation (matrixConcatenate, dataW);
-
-    applyTransformation (arbitraryRotation, dataC);
-
-    output (); 
-
- 
-
-    myDisplay();     
-
-}
-
- 
-
-int main (int argc, char** argv)
-
-{
-
-   
-
-    lineNum = 16;
-
-    vx = 10;
-
-    vy = -10;
-
-    vz = 0;
-
-    s = 150;
-
-    d = -150;
-
-    screenPixel = 150;
-
-   
-
-/* 
-
-    // name of the input file name is provided by user
-
-    cout << "Enter the datalines input file name: (input.txt) "; cin >> inputName;
-
-    // number of lines is provided by user
-
-    cout << "Enter the number of lines to transform from the datalines file: (16) "; cin >> lineNum;
-
-   
-
-    cout << "Enter the viewpoint x: (10) "; cin >> vx;
-
-    cout << "Enter the viewpoint y: (-10) "; cin >> vy;
-
-    cout << "Enter the viewpoint z: (0) ";    cin >> vz;
-
-    cout << "Enter the screen size: (150) "; cin >> s;
-
-    cout << "Enter the distance from the screen: (-150) "; cin >> d;
-
-    cout << "Enter the screen resolution: (150) ";  cin >> screenPixel;
-
- */
-
-    /*
-
-    cout << "Enter the arbitrary axis x1: ";  cin >> rx1;
-
-    cout << "Enter the arbitrary axis y1: ";  cin >> ry1;
-
-    cout << "Enter the arbitrary axis z1: ";  cin >> rz1;
-
-    cout << "Enter the arbitrary axis x2: ";  cin >> rx2;
-
-    cout << "Enter the arbitrary axis y2: ";  cin >> ry2;
-
-    cout << "Enter the arbitrary axis z2: ";  cin >> rz2;
-
-    cout << "Enter the rotation angle: ";     cin >> angleRotate;
-
-    */
-
-    glutInit (&argc, argv); // initialize GLUT
-
-    glutInitDisplayMode (GLUT_SINGLE | GLUT_RGB); // set display mode
-
-    glutInitWindowPosition (100, 100); // set top-left display-window position
-
-    glutInitWindowSize (800, 600); // set display-window sidth and height
-
-    glutCreateWindow ("Screen"); // create display window
-
- 
-
-    init (800, 600); // execute initialization procedure
-
-    glutDisplayFunc (displayCube); // send graphics to display window
-
-    //glutDisplayFunc (displayRotation); // send graphics to display window
-
-    glutMainLoop (); // display everything and wait
-
-   
-
-}//end
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize(1362, 750);
+    glutInitWindowPosition(0, 0);
+    glutCreateWindow("3D TRANSFORMATIONS");
+
+    inputSquare();
+    cout << "================\n";
+    cout << "original matrix\n";
+    printSquare(input);
+    init();
+    cout << "Enter your choice number:\n1.Perspective\n2.Scaling\n3.Rotation\n=>";
+    cin >> choice;
+    switch (choice)
+    {
+    case 1:
+        cout << "\nEnter Iz(coordinate center of projection on the axis Oz): ";
+        cin >> Iz;
+        break;
+    case 2:
+        cout << "\nEnter Sx,Sy & Sz: \n";
+        cin >> sx >> sy >> sz;
+        break;
+    case 3:
+        cout << "Enter your choice for Rotation about axis:\n1.parallel to X-axis."
+             << "(y& z)\n2.parallel to Y-axis.(x& z)\n3.parallel to Z-axis."
+             << "(x& y)\n =>";
+        cin >> choiceRot;
+        switch (choiceRot)
+        {
+        case 1:
+            cout << "\nENter Rotation angle: ";
+            cin >> angle;
+            break;
+        case 2:
+            cout << "\nENter Rotation angle: ";
+            cin >> angle;
+            break;
+        case 3:
+            cout << "\nENter Rotation angle: ";
+            cin >> angle;
+            break;
+        default:
+            break;
+        }
+        break;
+
+    default:
+        break;
+    }
+    glutDisplayFunc(display);
+    glutMainLoop();
+
+    return 0;
+} // end

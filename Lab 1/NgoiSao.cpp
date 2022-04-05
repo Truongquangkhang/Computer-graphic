@@ -2,7 +2,6 @@
 #include <math.h>
 #include <iostream>
 using namespace std;
-
 void initGL() {
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glMatrixMode(GL_PROJECTION);    
@@ -45,7 +44,6 @@ void display() {
    	ngoisao(0.5, 0.5, 0.3);
    	glFlush();
 }
-
 int main(int argc, char** argv) {
    glutInit(&argc, argv);         \
    glutCreateWindow("Lab"); 
@@ -56,6 +54,3 @@ int main(int argc, char** argv) {
    glutMainLoop();                 
    return 0;
 }
-
-
-

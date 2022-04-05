@@ -52,7 +52,6 @@ void display() {
    	veHoa(1, 1, 0.3);
    	glFlush();
 }
-
 int main(int argc, char** argv) {
    glutInit(&argc, argv);         \
    glutCreateWindow("Lab"); 
@@ -63,6 +62,3 @@ int main(int argc, char** argv) {
    glutMainLoop();                 
    return 0;
 }
-
-
-
