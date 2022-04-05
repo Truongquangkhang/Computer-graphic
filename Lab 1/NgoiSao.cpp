@@ -2,7 +2,7 @@
 #include <math.h>
 #include <iostream>
 using namespace std;
-/*
+
 void initGL() {
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glMatrixMode(GL_PROJECTION);    
@@ -56,7 +56,6 @@ int main(int argc, char** argv) {
    glutMainLoop();                 
    return 0;
 }
-*/
 
 
 

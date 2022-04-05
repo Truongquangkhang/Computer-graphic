@@ -1,6 +1,6 @@
 #include <GL/glut.h>
 #include <math.h>
-/*
+
 void drawCircle(float x1, float y1, float x2, float y2, float x3, float y3)
 {
     float x12 = x1 - x2;
@@ -86,5 +86,4 @@ int main(int argc, char** argv) {
    glutMainLoop();                 
    return 0;
 }
-*/
 

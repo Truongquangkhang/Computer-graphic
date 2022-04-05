@@ -2,8 +2,8 @@
 #include <cmath>
 
 using namespace std;
-/*
-void RenderCosWave()
+
+void Render()
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);  // clear background with black
     glClear(GL_COLOR_BUFFER_BIT);   
@@ -33,9 +33,9 @@ int main(int argc, char** argv)
     glutInit( &argc, argv );
     glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE );
     glutInitWindowSize( 640, 480 );
-    glutCreateWindow( "SineWave.cpp" );
+    glutCreateWindow( "Lab.cpp" );
     glutDisplayFunc( RenderCosWave );
     glutMainLoop();
     return 0;
 }
-*/
+

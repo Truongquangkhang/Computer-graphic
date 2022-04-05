@@ -1,5 +1,5 @@
 #include <GL/glut.h>
-/*
+
 void initGL() {
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glMatrixMode(GL_PROJECTION);    
@@ -37,7 +37,7 @@ void display() {
    glEnd();  
    glFlush();
 }
-/*
+
 int main(int argc, char** argv) {
    glutInit(&argc, argv);         \
    glutCreateWindow("Lab"); 
@@ -48,5 +48,5 @@ int main(int argc, char** argv) {
    glutMainLoop();                 
    return 0;
 }
-*/
+
 

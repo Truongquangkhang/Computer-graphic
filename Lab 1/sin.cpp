@@ -2,7 +2,7 @@
 #include <cmath>
 
 using namespace std;
-/*
+
 void RenderSineWave()
 {
     glClearColor(0.0, 0.0, 0.0, 1.0);  // clear background with black
@@ -42,4 +42,3 @@ int main(int argc, char** argv)
     glutMainLoop();
     return 0;
 }
-*/
